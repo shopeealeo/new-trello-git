@@ -1,0 +1,10 @@
+name = "new-trello-git"
+main = "src/server/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+assets = { directory = "dist" }
+
+[[d1_databases]]
+binding = "DB"
+database_name = "new-trello-db"
+database_id = "79b78026-d5dc-43b7-a25f-70b4a1e7489c"
