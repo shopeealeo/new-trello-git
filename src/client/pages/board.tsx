@@ -15,6 +15,7 @@ export function BoardPage({ boardId }: BoardPageProps) {
   const [showAddList, setShowAddList] = useState(false);
   const [dragCard, setDragCard] = useState<{ cardId: string; fromListId: string } | null>(null);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadBoard();
@@ -37,23 +38,30 @@ export function BoardPage({ boardId }: BoardPageProps) {
 
   async function addList(e: Event) {
     e.preventDefault();
-    if (!newListTitle.trim()) return;
+    if (!newListTitle.trim() || submitting) return;
+    setSubmitting(true);
     try {
       await api.createList(boardId, newListTitle.trim());
       setNewListTitle("");
       setShowAddList(false);
-      loadBoard();
+      await loadBoard();
     } catch (err) {
       alert((err as Error).message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
   async function addCard(listId: string, title: string) {
+    if (submitting) return;
+    setSubmitting(true);
     try {
       await api.createCard(listId, title);
-      loadBoard();
+      await loadBoard();
     } catch (err) {
       alert((err as Error).message);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -137,8 +145,8 @@ export function BoardPage({ boardId }: BoardPageProps) {
                   autoFocus
                 />
                 <div class="flex gap-2 mt-2">
-                  <button type="submit" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium">
-                    Add List
+                  <button type="submit" disabled={submitting} class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium disabled:opacity-50">
+                    {submitting ? "..." : "Add List"}
                   </button>
                   <button type="button" onClick={() => setShowAddList(false)} class="text-gray-500 text-sm">
                     Cancel
@@ -185,12 +193,17 @@ function ListColumn({ list, labels, onAddCard, onDeleteList, onDragStart, onDrop
 }) {
   const [showAddCard, setShowAddCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
+  const [cardSubmitting, setCardSubmitting] = useState(false);
 
   function handleAddCard(e: Event) {
     e.preventDefault();
-    if (!newCardTitle.trim()) return;
-    onAddCard(list.id, newCardTitle.trim());
+    if (!newCardTitle.trim() || cardSubmitting) return;
+    setCardSubmitting(true);
+    const title = newCardTitle.trim();
     setNewCardTitle("");
+    onAddCard(list.id, title);
+    // Reset after a short delay to prevent double-clicks
+    setTimeout(() => setCardSubmitting(false), 1000);
   }
 
   return (
@@ -275,8 +288,8 @@ function ListColumn({ list, labels, onAddCard, onDeleteList, onDragStart, onDrop
               }}
             />
             <div class="flex gap-2 mt-1">
-              <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium">
-                Add Card
+              <button type="submit" disabled={cardSubmitting} class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium disabled:opacity-50">
+                {cardSubmitting ? "..." : "Add Card"}
               </button>
               <button type="button" onClick={() => setShowAddCard(false)} class="text-gray-500 text-xs">
                 Cancel
@@ -312,6 +325,7 @@ function CardModal({ card, labels, boardId, onClose, onUpdate, onDelete }: {
   const [comments, setComments] = useState<Array<{ id: string; content: string; user_name: string; created_at: string }>>([]);
   const [newComment, setNewComment] = useState("");
   const [saving, setSaving] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
 
   useEffect(() => {
     loadCardDetails();
@@ -344,13 +358,16 @@ function CardModal({ card, labels, boardId, onClose, onUpdate, onDelete }: {
 
   async function addComment(e: Event) {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || commentSubmitting) return;
+    setCommentSubmitting(true);
     try {
       await api.createComment(card.id, newComment.trim());
       setNewComment("");
-      loadCardDetails();
+      await loadCardDetails();
     } catch (err) {
       alert((err as Error).message);
+    } finally {
+      setCommentSubmitting(false);
     }
   }
 
@@ -447,8 +464,8 @@ function CardModal({ card, labels, boardId, onClose, onUpdate, onDelete }: {
                 placeholder="Write a comment..."
                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-              <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                Post
+              <button type="submit" disabled={commentSubmitting} class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50">
+                {commentSubmitting ? "..." : "Post"}
               </button>
             </form>
           </div>

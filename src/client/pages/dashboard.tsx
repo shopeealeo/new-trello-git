@@ -29,14 +29,16 @@ export function DashboardPage() {
 
   async function createBoard(e: Event) {
     e.preventDefault();
-    if (!newBoardName.trim() || !currentWorkspace) return;
+    if (!newBoardName.trim() || !currentWorkspace || loading) return;
+    setLoading(true);
     try {
       await api.createBoard(currentWorkspace.id, newBoardName.trim());
       setNewBoardName("");
       setShowNewBoard(false);
-      loadBoards();
+      await loadBoards();
     } catch (err) {
       alert((err as Error).message);
+      setLoading(false);
     }
   }
 
